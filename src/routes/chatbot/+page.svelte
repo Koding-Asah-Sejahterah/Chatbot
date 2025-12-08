@@ -1,16 +1,21 @@
 <script>
     import { chatStore } from './store.js';
+    import { onMount } from 'svelte';
 
     let messages;
     let inputValue;
     let sidebarOpen;
     let messagesContainer;
+    let isLoading;
+    let error;
 
     const unsubscribe = chatStore.subscribe(state => {
         messages = state.messages;
         inputValue = state.inputValue;
         sidebarOpen = state.sidebarOpen;
         messagesContainer = state.messagesContainer;
+        isLoading = state.isLoading;
+        error = state.error;
     });
 
     function handleInputChange(e) {
@@ -20,6 +25,10 @@
     $: if (messagesContainer) {
         chatStore.setMessagesContainer(messagesContainer);
     }
+
+    onMount(() => {
+        chatStore.initializeSession();
+    });
 </script>
 
 <div class="flex h-screen bg-[#020202] text-white">
@@ -64,6 +73,18 @@
                             </div>
                         {/if}
                     {/each}
+                    
+                    {#if isLoading}
+                        <div class="flex justify-start">
+                            <div class="bg-white rounded-3xl px-6 py-3 shadow-lg">
+                                <div class="flex gap-2 items-center">
+                                    <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0s;"></span>
+                                    <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></span>
+                                    <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s;"></span>
+                                </div>
+                            </div>
+                        </div>
+                    {/if}
                 </div>
 
                 <!-- Input Area inside Card -->
@@ -73,19 +94,28 @@
                         value={inputValue}
                         on:input={handleInputChange}
                         on:keydown={chatStore.handleKeyDown}
+                        disabled={isLoading}
                         placeholder="Tanyakan apa saja tentang progres belajar kamu..."
-                        class="flex-1 bg-gray-800 text-white rounded-full px-5 py-3 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                        class="flex-1 bg-gray-800 text-white rounded-full px-5 py-3 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition disabled:opacity-50"
                         aria-label="Chat input"
                     />
                     <button
                         type="button"
                         on:click={chatStore.sendMessage}
-                        class="bg-linear-to-r from-[#2350F7] to-[#7259FF] text-white rounded-lg p-3 flex items-center justify-center transition shadow-lg shrink-0 hover:shadow-2xl hover:scale-110 active:scale-95"
+                        disabled={isLoading}
+                        class="bg-linear-to-r from-[#2350F7] to-[#7259FF] text-white rounded-lg p-3 flex items-center justify-center transition shadow-lg shrink-0 hover:shadow-2xl hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         aria-label="Send message"
                     >
-                        <svg class="w-5 h-5 -rotate-45" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M16.6915026,12.4744748 L3.50612381,13.2599618 C3.19218622,13.2599618 3.03521743,13.4170592 3.03521743,13.5741566 L1.15159189,20.0151496 C0.8376543,20.8006365 0.99,21.89 1.77946707,22.52 C2.41,22.99 3.50612381,23.1 4.13399899,22.8429026 L21.714504,14.0454487 C22.6563168,13.5741566 23.1272231,12.6315722 22.9702544,11.6889879 C22.9702544,11.6889879 22.9702544,11.6889879 22.9702544,11.6889879 L4.13399899,1.16346272 C3.34915502,0.9 2.40734225,1.00636533 1.77946707,1.4776575 C0.994623095,2.10604706 0.837654326,3.0486314 1.15159189,3.99021575 L3.03521743,10.4310088 C3.03521743,10.5881061 3.19218622,10.7452035 3.50612381,10.7452035 L16.6915026,11.5306905 C16.6915026,11.5306905 17.1624089,11.5306905 17.1624089,11.0593983 L17.1624089,12.0019827 C17.1624089,12.4744748 16.6915026,12.4744748 16.6915026,12.4744748 Z"/>
-                        </svg>
+                        {#if isLoading}
+                            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        {:else}
+                            <svg class="w-5 h-5 -rotate-45" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M16.6915026,12.4744748 L3.50612381,13.2599618 C3.19218622,13.2599618 3.03521743,13.4170592 3.03521743,13.5741566 L1.15159189,20.0151496 C0.8376543,20.8006365 0.99,21.89 1.77946707,22.52 C2.41,22.99 3.50612381,23.1 4.13399899,22.8429026 L21.714504,14.0454487 C22.6563168,13.5741566 23.1272231,12.6315722 22.9702544,11.6889879 C22.9702544,11.6889879 22.9702544,11.6889879 22.9702544,11.6889879 L4.13399899,1.16346272 C3.34915502,0.9 2.40734225,1.00636533 1.77946707,1.4776575 C0.994623095,2.10604706 0.837654326,3.0486314 1.15159189,3.99021575 L3.03521743,10.4310088 C3.03521743,10.5881061 3.19218622,10.7452035 3.50612381,10.7452035 L16.6915026,11.5306905 C16.6915026,11.5306905 17.1624089,11.5306905 17.1624089,11.0593983 L17.1624089,12.0019827 C17.1624089,12.4744748 16.6915026,12.4744748 16.6915026,12.4744748 Z"/>
+                            </svg>
+                        {/if}
                     </button>
                 </div>
             </div>
