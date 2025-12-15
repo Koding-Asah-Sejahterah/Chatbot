@@ -1,6 +1,6 @@
 <script>
     import { chatStore } from './store.js';
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
 
     let messages;
     let inputValue;
@@ -24,6 +24,19 @@
 
     $: if (messagesContainer) {
         chatStore.setMessagesContainer(messagesContainer);
+    }
+
+    function scrollToBottom() {
+        tick().then(() => {
+            let container;
+            subscribe(state => {
+                container = state.messagesContainer;
+            })();
+            
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        });
     }
 
     onMount(() => {
